@@ -81,14 +81,24 @@ def get_file(file_name):
 	# Bind the socket to port 0
 	dataSock.bind(('',0))
 
+	dataSock.listen(1)
+
 	# Retreive the ephemeral port number
 	print "I chose ephemeral port as the data channel: ", dataSock.getsockname()[1]
+
+
 
 	# Keep sending until all is sent
 	while True:
 		
 		# write the data socket port & filename to the data
-		fileData = str(dataSock.getsockname()) + " " + file_name
+		fileData = str(dataSock.getsockname()[1]) + " " + "get " + file_name
+
+		# try padding data
+		# Prepend 0's to the size string
+			# until the size is 10 bytes
+		#while len(fileData) < 30:
+			#fileData = "0" + fileData
 		
 		# Make sure we did not hit EOF
 		if fileData:

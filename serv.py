@@ -7,8 +7,16 @@
 
 import socket
 
+def send_file(file_data):
+	data_port = int(file_data.rsplit(" ", 2)[0])
+	#data_port = int(file_data[0])
+	print "data port #: " + str(data_port)
+
+
+
+
 # The port on which to listen
-listenPort = 50000
+listenPort = 1234
 
 # Create a welcome socket. 
 welcomeSock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -85,10 +93,16 @@ while True:
 	
 	# Get the file data
 	fileData = recvAll(clientSock, fileSize)
+
+
+
 	
 	print "The file data is: "
 	print fileData
+
+	if "get" in fileData:
+		send_file(fileData)
 		
 	# Close our side
-	clientSock.close()
+	#clientSock.close()
 	
