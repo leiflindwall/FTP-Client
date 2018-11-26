@@ -61,7 +61,7 @@ def put_file(file_name):
 			
 			# Send the data!
 			while len(fileData) > numSent:
-				numSent += connSock.send(fileData[numSent:])
+				numSent += dataSock.send(fileData[numSent:])
 		
 		# The file has been read. We are done
 		else:
@@ -81,13 +81,15 @@ def get_file(file_name):
 	# Bind the socket to port 0
 	dataSock.bind(('',0))
 
-	dataSock.listen(1)
+	#dataSock.listen(1)
 
 	# Retreive the ephemeral port number
 	print "I chose ephemeral port as the data channel: ", dataSock.getsockname()[1]
 
+	# The number of bytes sent
+	numSent = 0
 
-
+	# send the ephemeral port # to the server first
 	# Keep sending until all is sent
 	while True:
 		
@@ -129,15 +131,88 @@ def get_file(file_name):
 		else:
 			break
 
+	dataSock.listen(1)
 
 	print "Sent ", numSent, " bytes."
-	# Close the  data socket and the file
-	dataSock.close()
+
+	# download the file
+	# Accept connections forever
+	while True:
 		
+		print "Waiting for connections..."
+			
+		# Accept connections
+		clientSock, addr = dataSock.accept()
+		
+		print "Accepted connection from server: ", addr
+		print "\n"
+		
+		# The buffer to all data received from the
+		# the client.
+		fileData = ""
+		
+		# The temporary buffer to store the received
+		# data.
+		recvBuff = ""
+		
+		# The size of the incoming file
+		fileSize = 0	
+		
+		# The buffer containing the file size
+		fileSizeBuff = ""
+		
+		# Receive the first 10 bytes indicating the
+		# size of the file
+		fileSizeBuff = recvAll(clientSock, 10)
+			
+		# Get the file size
+		fileSize = int(fileSizeBuff)
+		
+		print "The file size is ", fileSize
+		
+		# Get the file data
+		fileData = recvAll(clientSock, fileSize)
+		
+		print "The file data is: "
+		print fileData
+
+		# Close the  data socket and the file
+		dataSock.close()
+		
+# for GET command
+# ************************************************
+# Receives the specified number of bytes
+# from the specified socket
+# @param sock - the socket from which to receive
+# @param numBytes - the number of bytes to receive
+# @return - the bytes received
+# *************************************************
+def recvAll(sock, numBytes):
+
+	# The buffer
+	recvBuff = ""
 	
+	# The temporary buffer
+	tmpBuff = ""
+	
+	# Keep receiving till all is received
+	while len(recvBuff) < numBytes:
+		
+		# Attempt to receive bytes
+		tmpBuff =  sock.recv(numBytes)
+		
+		# The other side has closed the socket
+		if not tmpBuff:
+			break
+		
+		# Add the received bytes to the buffer
+		recvBuff += tmpBuff
+	
+	return recvBuff
+
 
 	
-
+# "main" program
 # Command line checks 
 if len(sys.argv) < 2:
 	print "USAGE python " + sys.argv[0] + " <Port #>" 

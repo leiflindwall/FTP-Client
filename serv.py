@@ -7,10 +7,79 @@
 
 import socket
 
+# method to handle GET command
 def send_file(file_data):
 	data_port = int(file_data.rsplit(" ", 2)[0])
+	file_name = str(file_data.rsplit(" ", 2)[2])
 	#data_port = int(file_data[0])
 	print "data port #: " + str(data_port)
+	print "file name: " + str(file_name)
+
+	# connect to the data socket
+	# Server address
+	serverAddr = "localhost"
+
+	# The name of the file
+	#fileName = sys.argv[1]
+
+	# Open the file
+	#fileObj = open("file.txt", "r")
+
+	# Create a TCP socket for control channel
+	dataSock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+	# Connect to the server
+	dataSock.connect((serverAddr, data_port))
+		# Open the file
+	fileObj = open(file_name, "r")
+	# The number of bytes sent
+	numSent = 0
+
+	# The file data
+	fileData = None
+
+	# Keep sending until all is sent
+	while True:
+		
+		# Read 65536 bytes of data
+		fileData = fileObj.read(65536)
+		
+		# Make sure we did not hit EOF
+		if fileData:
+			
+				
+			# Get the size of the data read
+			# and convert it to string
+			dataSizeStr = str(len(fileData))
+			
+			# Prepend 0's to the size string
+			# until the size is 10 bytes
+			while len(dataSizeStr) < 10:
+				dataSizeStr = "0" + dataSizeStr
+		
+		
+			# Prepend the size of the data to the
+			# file data.
+			fileData = dataSizeStr + fileData	
+			
+			# The number of bytes sent
+			numSent = 0
+			
+			# Send the data!
+			while len(fileData) > numSent:
+				numSent += dataSock.send(fileData[numSent:])
+		
+		# The file has been read. We are done
+		else:
+			break
+
+
+	print "Sent ", numSent, " bytes."
+		
+	
+	fileObj.close()
+
+
 
 
 
