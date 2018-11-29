@@ -1,109 +1,93 @@
-
-# *****************************************************
-# This file implements a server for receiving the file
-# sent using sendfile(). The server receives a file and
-# prints it's contents.
-# *****************************************************
-
+# *********************************************************
+# CPSC 471-01, Dr. Yun Tian
+# FTP Client / Socket Programming Project
+#
+# Michael Lindwall michaellindwall@csu.fullerton.edu
+# Marcus Hoertz marcus.hoertz@csu.fullerton.edu
+#
+# SERV.PY
+#
+# This script impliments the server-side of an FTP client
+# *********************************************************
 import socket
+import os
+import sys
 
-# the method to connect to the client's data socket
-def connect_data_socket(file_data):
-	data_port = int(file_data.rsplit(" ", 2)[0])
-	file_name = str(file_data.rsplit(" ", 2)[2])
-	
-	print "connecting to data socket..."
-	print "data port #: " + str(data_port)
-	print "file name: " + str(file_name)
-
-	cliAddr = "localhost"
-	#cliPort = 1234
-
-	# Create a TCP socket
-	dataSock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
-	# Connect to the client's data port
-	dataSock.connect((cliAddr, data_port))
-
-	return dataSock
-
-
-def create_data_sock(command):
+# the method to create the socket for data transfer
+def create_data_sock():
 	# Create a socket for the data channel
 	dataSock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-	# Bind the socket to port 0
-	#dataSock.bind(('',0))
+	# Bind the socket to port 1235
 	dataSock.bind(('',1235))
 
 	# start listening on that port
 	dataSock.listen(1)
 
-	# Retreive the ephemeral port number
-	#print "I chose ephemeral port as the data channel: ", dataSock.getsockname()[1]
-	#print "sending port # to client.......\n"
+	return dataSock
 
-	
-	#print "Sent data port # to server, ", numSent, " bytes."
+# the method to connect to the client's data socket
+def connect_data_socket():
+	print "connecting to data socket..."
+
+	cliAddr = "localhost"
+	servPort = 1235
+
+	# Create a TCP socket
+	dataSock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+	# Connect to the client's data port
+	dataSock.connect((cliAddr, servPort))
 
 	return dataSock
 
 
 # the method to handle the PUT command
 def recv_file(file_data):
-	# connect to the client's data socket
-	dataSock = create_data_sock("put")
+	# create the data socket for file transfer
+	dataSock = create_data_sock()
 
-	# Accept connections forever
-	
-		
-	print "Waiting for connections for file transfer"
+	print "Waiting for connections on data socket for file transfer......"
 			
-		# Accept connections
-	clientSock, addr = dataSock.accept()
+	# Accept connections
+	clientSock, addr = dataSock.accept()	
+	print "Accepted connection from client on data channel: \n", addr
 		
-	print "Accepted connection from client on control channel: \n", addr
-		
-		# The size of the incoming file
+	# The size of the incoming file
 	fileSize = 0	
 		
-		# The buffer containing the file size
+	# The buffer containing the file size
 	fileSizeBuff = ""
 		
-		# Receive the first 10 bytes indicating the size of the file
+	# Receive the first 10 bytes indicating the size of the file
 	fileSizeBuff = recvAll(clientSock, 10)
 			
-		# Get the file size
+	# Get the file size
 	fileSize = int(fileSizeBuff)
 
-		# Get the file data containing the command from the connection socket
+	# Get the file data containing the command from the connection socket
 	fileData = recvAll(clientSock, fileSize)
-		
-	print "The file data is: "
-	print fileData
-			
-		# Close our side
+
+	if fileData:
+		print "\nPUT SUCCESSFUL"
+		print "\nThe file data is: "
+		print fileData
+	else:
+		print "PUT FAILED"
+
+	# Close our side
 	dataSock.close()
 
 
 # method to handle GET command
-def send_file(file_data):
+def send_file(file_name):	
+
 	# connect to the client's data socket
-	dataSock = connect_data_socket(file_data)
-
-	#dataSock.listen(2)
-	print "request from client to download file..."
+	dataSock = connect_data_socket()
 		
-	# Accept connections
-	clientSock, addr = dataSock.accept()
-
-	
-	print "Accepted connection from client on data port: ", addr
-	print "\n"
-
 	# Open the file
-	file_name = str(file_data.rsplit(" ", 2)[2])
 	fileObj = open(file_name, "r")
+
 	# The number of bytes sent
 	numSent = 0
 
@@ -112,25 +96,20 @@ def send_file(file_data):
 
 	# Keep sending until all is sent
 	while True:
-		
 		# Read 65536 bytes of data
 		fileData = fileObj.read(65536)
 		
 		# Make sure we did not hit EOF
-		if fileData:	
-				
-			# Get the size of the data read
-			# and convert it to string
+		if fileData:
+							
+			# Get the size of the data read and convert it to string
 			dataSizeStr = str(len(fileData))
 			
-			# Prepend 0's to the size string
-			# until the size is 10 bytes
+			# Prepend 0's to the size string until the size is 10 bytes
 			while len(dataSizeStr) < 10:
 				dataSizeStr = "0" + dataSizeStr
-		
-		
-			# Prepend the size of the data to the
-			# file data.
+				
+			# Prepend the size of the data to the file data.
 			fileData = dataSizeStr + fileData	
 			
 			# The number of bytes sent
@@ -144,9 +123,13 @@ def send_file(file_data):
 		else:
 			break
 
-	print "Sent ", numSent, " bytes."
-	
+	print "\nGET SUCCESSFUL"
+	print "Sent "+ file_name + ", ", numSent, " bytes.\n"
+		
+	# Close the socket and the file
+	dataSock.close()
 	fileObj.close()
+
 
 # ************************************************
 # Receives the specified number of bytes
@@ -156,8 +139,6 @@ def send_file(file_data):
 # @return - the bytes received
 # *************************************************
 def recvAll(sock, numBytes):
-
-	print " reached recvALL..."
 	# The buffer
 	recvBuff = ""
 	
@@ -198,15 +179,16 @@ controlSock.bind(('', listenPort))
 controlSock.listen(1)
 		
 # Accept connections forever
-print "Waiting for connections..."
+print "\nWaiting for connections..."
 		
-	# Accept connections
+# Accept connections
 clientSock, addr = controlSock.accept()
 	
-print "Accepted connection from client on control channel: \n", addr
+print "Accepted connection from client on control channel: ", addr
+print
 
 while True:
-	
+	print "Waiting for commands on the control channel..."
 
 	
 	# The buffer to all data received from the the client.
@@ -234,10 +216,11 @@ while True:
 	#print fileData
 
 	if "get" in fileData:
-		print("received get cmd ... attempting to send file")
-		send_file(fileData)
+		print("received GET cmd ... connecting to data socket to send file\n")
+		file_name = str(fileData.rsplit(" ", 2)[1])
+		send_file(file_name)
 	elif "put" in fileData:
-		print("received put cmd ... attempting to receive file")
+		print("received PUT cmd ... creating the data socket to receive file\n")
 		recv_file(fileData)
 		
 # Close our side
