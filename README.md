@@ -17,8 +17,11 @@ and begin by starting the server with the command 'python serv.py'.
 -You should see a prompt 'ftp> '.  Supply one of the following commands:
 
   get <file name>     *this downloads the specified file from the server
+  
   put <file name>     *this uploads the specified file to the server
+  
   ls                  *this list the files on the server
+  
   quit                *this quits the ftp client
 
 
