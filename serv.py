@@ -12,6 +12,7 @@
 import socket
 import os
 import sys
+import commands
 
 # the method to create the socket for data transfer
 def create_data_sock():
@@ -41,6 +42,46 @@ def connect_data_socket():
 
 	return dataSock
 
+# the method to show the files
+def show_files():
+	dataSock = connect_data_socket()
+	
+	fileData = ""
+	for line in commands.getstatusoutput('ls -l'):
+		fileData = fileData + "\n" +str(line)
+		print str(line)
+	while True:
+
+		# Make sure we did not hit EOF
+		if fileData:
+							
+			# Get the size of the data read and convert it to string
+			dataSizeStr = str(len(fileData))
+			
+			# Prepend 0's to the size string until the size is 10 bytes
+			while len(dataSizeStr) < 10:
+				dataSizeStr = "0" + dataSizeStr
+				
+			# Prepend the size of the data to the file data.
+			fileData = dataSizeStr + fileData	
+			
+			# The number of bytes sent
+			numSent = 0
+			
+			# Send the data!
+			while len(fileData) > numSent:
+				numSent += dataSock.send(fileData[numSent:])
+		
+			break
+		# The file has been read. We are done
+		else:
+			break
+
+	print "\nSent ls results to client. Contained ", numSent, " bytes."
+
+	dataSock.close()
+
+	
 
 # the method to handle the PUT command
 def recv_file(file_data):
@@ -222,6 +263,9 @@ while True:
 	elif "put" in fileData:
 		print("received PUT cmd ... creating the data socket to receive file\n")
 		recv_file(fileData)
+	elif "ls" in fileData:
+		print("received LS CMD ... showing files")
+		show_files()
 		
 # Close our side
 clientSock.close()
