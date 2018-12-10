@@ -12,6 +12,7 @@
 import socket
 import os
 import sys
+import commands
 
 # this method sends the command to the server on the control channel
 def send_command(command):
@@ -22,7 +23,10 @@ def send_command(command):
 	fileData = None
 
 	# write the command & filename to the data
-	fileData = str(command + " " + file_name)
+	if(command == "ls"):
+		fileData=command
+	else:
+		fileData = str(command + " " + file_name)
 
 	# Keep sending until all is sent
 	while True:
@@ -82,7 +86,6 @@ def create_data_sock():
 	dataSock.listen(1)
 
 	return dataSock
-
 
 # the method to handle the PUT command
 def put_file(file_name):
@@ -200,7 +203,35 @@ def recvAll(sock, numBytes):
 	
 	return recvBuff
 
+def ls_response():
+	print "Waiting for ls response......"
+			
+	# Accept connections
+	servSock, addr = dataSock.accept()	
+	#print "Accepted connection from client on control channel: ", addr
+		
+	# The size of the incoming file
+	fileSize = 0	
+		
+	# The buffer containing the file size
+	fileSizeBuff = ""
+		
+	# Receive the first 10 bytes indicating the size of the file
+	fileSizeBuff = recvAll(servSock, 10)
+			
+	# Get the file size
+	fileSize = int(fileSizeBuff)
 
+	# Get the file data containing the command from the connection socket
+	fileData = recvAll(servSock, fileSize)
+		
+	if fileData:
+		print "\nLS SUCCESSFUL"
+		print "\nThe response data is: "
+		print fileData
+	else:
+		print "GET FAILED"
+			
 	
 # THE MAIN CLIENT PROGRAM
 
@@ -232,13 +263,18 @@ while done == False:
 		put_file(file_name)
 	elif "ls" in current_cmd:
 		print("in ls cmd")
+		send_command("ls")
+		dataSock = create_data_sock()
+		ls_response()
+		dataSock.close()
+	
 	else:
+		print("Terminating control connection")
 		done = True
 
 # Close the socket
 controlSock.close()
 		
-
 
 
 
