@@ -13,6 +13,7 @@ import socket
 import os
 import sys
 import commands
+import ftp
 
 # this method sends the command to the server on the control channel
 def send_command(command):
@@ -58,42 +59,13 @@ def send_command(command):
 
 	print "\nSent command to server, ", numSent, " bytes."
 
-	
-# the method to connect to the server's data socket
-def connect_data_socket():
-	print "connecting to data socket..."
-
-	cliAddr = "localhost"
-	servPort = 1235
-
-	# Create a TCP socket
-	dataSock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
-	# Connect to the client's data port
-	dataSock.connect((cliAddr, servPort))
-
-	return dataSock
-
-# the method to create the socket for data transfer
-def create_data_sock():
-	# Create a socket for the data channel
-	dataSock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
-	# Bind the socket to port 1235
-	dataSock.bind(('',1235))
-
-	# start listening on that port
-	dataSock.listen(1)
-
-	return dataSock
-
 # the method to handle the PUT command
 def put_file(file_name):
 	# send the put command to the server
 	send_command("put")
 
 	# connect to data socket 1235
-	dataSock = connect_data_socket()
+	dataSock = ftp.connect_data_socket()
 
 	# Open the file
 	fileObj = open(file_name, "r")
@@ -133,12 +105,12 @@ def put_file(file_name):
 		else:
 			break
 
-	print "Sent "+ file_name + ", ", numSent, " bytes.\n"
+		print "Sent "+ file_name + ", ", numSent, " bytes.\n"
+		print "PUT SUCCESSFUL\n"
 		
 	# Close the socket and the file
 	dataSock.close()
 	fileObj.close()
-
 
 # the method to handle the GET command
 def get_file(file_name):
@@ -146,7 +118,7 @@ def get_file(file_name):
 	send_command("get")
 
 	# create the data socket for file transfer
-	dataSock = create_data_sock()
+	dataSock = ftp.create_data_sock()
 
 	print "Waiting for connections for file transfer......"
 			
@@ -161,13 +133,13 @@ def get_file(file_name):
 	fileSizeBuff = ""
 		
 	# Receive the first 10 bytes indicating the size of the file
-	fileSizeBuff = recvAll(clientSock, 10)
+	fileSizeBuff = ftp.recvAll(clientSock, 10)
 			
 	# Get the file size
 	fileSize = int(fileSizeBuff)
 
 	# Get the file data containing the command from the connection socket
-	fileData = recvAll(clientSock, fileSize)
+	fileData = ftp.recvAll(clientSock, fileSize)
 		
 	if fileData:
 		print "\nGET SUCCESSFUL"
@@ -178,30 +150,6 @@ def get_file(file_name):
 			
 	# Close our side
 	dataSock.close()
-
-
-# for GET command
-def recvAll(sock, numBytes):
-	# The buffer
-	recvBuff = ""
-	
-	# The temporary buffer
-	tmpBuff = ""
-	
-	# Keep receiving till all is received
-	while len(recvBuff) < numBytes:
-		
-		# Attempt to receive bytes
-		tmpBuff =  sock.recv(numBytes)
-		
-		# The other side has closed the socket
-		if not tmpBuff:
-			break
-		
-		# Add the received bytes to the buffer
-		recvBuff += tmpBuff
-	
-	return recvBuff
 
 def ls_response():
 	print "Waiting for ls response......"
@@ -217,13 +165,13 @@ def ls_response():
 	fileSizeBuff = ""
 		
 	# Receive the first 10 bytes indicating the size of the file
-	fileSizeBuff = recvAll(servSock, 10)
+	fileSizeBuff = ftp.recvAll(servSock, 10)
 			
 	# Get the file size
 	fileSize = int(fileSizeBuff)
 
 	# Get the file data containing the command from the connection socket
-	fileData = recvAll(servSock, fileSize)
+	fileData = ftp.recvAll(servSock, fileSize)
 		
 	if fileData:
 		print "\nLS SUCCESSFUL"
@@ -264,17 +212,12 @@ while done == False:
 	elif "ls" in current_cmd:
 		print("in ls cmd")
 		send_command("ls")
-		dataSock = create_data_sock()
+		dataSock = ftp.create_data_sock()
 		ls_response()
 		dataSock.close()
-	
 	else:
 		print("Terminating control connection")
 		done = True
 
 # Close the socket
 controlSock.close()
-		
-
-
-

@@ -13,45 +13,18 @@ import socket
 import os
 import sys
 import commands
-
-# the method to create the socket for data transfer
-def create_data_sock():
-	# Create a socket for the data channel
-	dataSock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
-	# Bind the socket to port 1235
-	dataSock.bind(('',1235))
-
-	# start listening on that port
-	dataSock.listen(1)
-
-	return dataSock
-
-# the method to connect to the client's data socket
-def connect_data_socket():
-	print "connecting to data socket..."
-
-	cliAddr = "localhost"
-	servPort = 1235
-
-	# Create a TCP socket
-	dataSock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
-	# Connect to the client's data port
-	dataSock.connect((cliAddr, servPort))
-
-	return dataSock
+import ftp
 
 # the method to show the files
 def show_files():
-	dataSock = connect_data_socket()
+	dataSock = ftp.connect_data_socket()
 	
 	fileData = ""
 	for line in commands.getstatusoutput('ls -l'):
 		fileData = fileData + "\n" +str(line)
 		print str(line)
-	while True:
 
+	while True:
 		# Make sure we did not hit EOF
 		if fileData:
 							
@@ -78,21 +51,18 @@ def show_files():
 			break
 
 	print "\nSent ls results to client. Contained ", numSent, " bytes."
-
 	dataSock.close()
-
-	
 
 # the method to handle the PUT command
 def recv_file(file_data):
 	# create the data socket for file transfer
-	dataSock = create_data_sock()
+	dataSock = ftp.create_data_sock()
 
 	print "Waiting for connections on data socket for file transfer......"
 			
 	# Accept connections
 	clientSock, addr = dataSock.accept()	
-	print "Accepted connection from client on data channel: \n", addr
+	print "Accepted connection from client on data channel: ", addr
 		
 	# The size of the incoming file
 	fileSize = 0	
@@ -101,13 +71,13 @@ def recv_file(file_data):
 	fileSizeBuff = ""
 		
 	# Receive the first 10 bytes indicating the size of the file
-	fileSizeBuff = recvAll(clientSock, 10)
+	fileSizeBuff = ftp.recvAll(clientSock, 10)
 			
 	# Get the file size
 	fileSize = int(fileSizeBuff)
 
 	# Get the file data containing the command from the connection socket
-	fileData = recvAll(clientSock, fileSize)
+	fileData = ftp.recvAll(clientSock, fileSize)
 
 	if fileData:
 		print "\nPUT SUCCESSFUL"
@@ -119,12 +89,10 @@ def recv_file(file_data):
 	# Close our side
 	dataSock.close()
 
-
 # method to handle GET command
 def send_file(file_name):	
-
 	# connect to the client's data socket
-	dataSock = connect_data_socket()
+	dataSock = ftp.connect_data_socket()
 		
 	# Open the file
 	fileObj = open(file_name, "r")
@@ -172,39 +140,6 @@ def send_file(file_name):
 	fileObj.close()
 
 
-# ************************************************
-# Receives the specified number of bytes
-# from the specified socket
-# @param sock - the socket from which to receive
-# @param numBytes - the number of bytes to receive
-# @return - the bytes received
-# *************************************************
-def recvAll(sock, numBytes):
-	# The buffer
-	recvBuff = ""
-	
-	# The temporary buffer
-	tmpBuff = ""
-	
-	# Keep receiving till all is received
-	while len(recvBuff) < numBytes:
-		
-		# Attempt to receive bytes
-		tmpBuff =  sock.recv(numBytes)
-		
-		# The other side has closed the socket
-		if not tmpBuff:
-			break
-		
-		# Add the received bytes to the buffer
-		recvBuff += tmpBuff
-	
-	return recvBuff
-
-
-
-
-
 # THE MAIN SERVER PROGRAM
 
 # The port on which to listen
@@ -230,7 +165,6 @@ print
 
 while True:
 	print "Waiting for commands on the control channel..."
-
 	
 	# The buffer to all data received from the the client.
 	fileData = ""
@@ -245,16 +179,13 @@ while True:
 	fileSizeBuff = ""
 	
 	# Receive the first 10 bytes indicating the size of the file
-	fileSizeBuff = recvAll(clientSock, 10)
+	fileSizeBuff = ftp.recvAll(clientSock, 10)
 		
 	# Get the file size
 	fileSize = int(fileSizeBuff)
 
 	# Get the file data containing the command from the connection socket
-	fileData = recvAll(clientSock, fileSize)
-	
-	#print "The file data is: "
-	#print fileData
+	fileData = ftp.recvAll(clientSock, fileSize)
 
 	if "get" in fileData:
 		print("received GET cmd ... connecting to data socket to send file\n")
@@ -269,4 +200,3 @@ while True:
 		
 # Close our side
 clientSock.close()
-	
