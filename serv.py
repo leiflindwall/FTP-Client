@@ -142,8 +142,13 @@ def send_file(file_name):
 
 # THE MAIN SERVER PROGRAM
 
+# Command line checks 
+if len(sys.argv) < 2:
+	print "USAGE: python " + sys.argv[0] + " <PORT #>" 
+
 # The port on which to listen
-listenPort = 1234
+#listenPort = 1234
+listenPort = int(sys.argv[1])
 
 # Create the control socket. 
 controlSock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

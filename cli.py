@@ -183,11 +183,17 @@ def ls_response():
 	
 # THE MAIN CLIENT PROGRAM
 
+# Command line checks 
+if len(sys.argv) < 3:
+	print "USAGE: python " + sys.argv[0] + " <SERVER IP/HOSTNAME> <SERVER PORT>" 
+
 # Server address
-serverAddr = "localhost"
+#serverAddr = "localhost"
+serverAddr = sys.argv[1]
 
 # Server port
-serverPort = 1234
+#serverPort = 1234
+serverPort = int(sys.argv[2])
 
 # Create a TCP socket for control channel
 controlSock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
