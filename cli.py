@@ -179,6 +179,8 @@ def ls_response():
 		print fileData
 	else:
 		print "GET FAILED"
+
+	dataSock.close()
 			
 	
 # THE MAIN CLIENT PROGRAM
@@ -220,7 +222,7 @@ while done == False:
 		send_command("ls")
 		dataSock = ftp.create_data_sock()
 		ls_response()
-		dataSock.close()
+		#dataSock.close()
 	else:
 		print("Terminating control connection")
 		done = True

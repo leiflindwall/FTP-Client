@@ -23,7 +23,7 @@ def create_data_sock():
 	dataSock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 	# Bind the socket to port 1235
-	dataSock.bind(('',1235))
+	dataSock.bind(('',55555))
 
 	# start listening on that port
 	dataSock.listen(1)
@@ -35,7 +35,7 @@ def connect_data_socket():
 	print "connecting to data socket..."
 
 	cliAddr = "localhost"
-	servPort = 1235
+	servPort = 55555
 
 	# Create a TCP socket
 	dataSock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
